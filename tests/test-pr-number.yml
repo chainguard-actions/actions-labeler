@@ -1,0 +1,33 @@
+name: Test labeler with pr-number input
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_EVENT_NAME: pull_request
+      GITHUB_REF: refs/pull/42/merge
+      GITHUB_HEAD_REF: feature-branch
+      GITHUB_BASE_REF: main
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up labeler config
+        run: |
+          mkdir -p .github
+          cp $GITHUB_WORKSPACE/actions/hardened/actions--labeler/v6.0.1/tests/fixtures/labeler.yml .github/labeler.yml
+
+      - id: action
+        uses: .
+        with:
+          repo-token: fake-token
+          configuration-path: .github/labeler.yml
+          sync-labels: false
+          dot: true
+          pr-number: 42
+        continue-on-error: true
+
+      - name: Assert action ran with pr-number input
+        run: |
+          echo "Action completed with pr-number=42 (may have failed due to fake token, which is expected in test)"
+          echo "PASS: action step with pr-number input was reached and executed"

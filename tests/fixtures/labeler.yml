@@ -1,0 +1,6 @@
+bug:
+  - '**/*.bug'
+documentation:
+  - '**/*.md'
+feature:
+  - 'src/**'
