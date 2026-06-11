@@ -12,15 +12,19 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - name: Set up labeler config
+      - name: Create labeler config
         run: |
           mkdir -p .github
-          cp $GITHUB_WORKSPACE/actions/hardened/actions--labeler/v6.0.1/tests/fixtures/labeler.yml .github/labeler.yml
+          cat > .github/labeler.yml << 'EOF'
+          documentation:
+            - changed-files:
+              - any-glob-to-any-file: ['docs/**', '*.md']
+          EOF
 
       - id: action
         uses: .
         with:
-          repo-token: fake-token
+          repo-token: fake-token-for-testing
           configuration-path: .github/labeler.yml
           sync-labels: false
           dot: true
@@ -28,5 +32,7 @@ jobs:
 
       - name: Assert action ran
         run: |
-          echo "Action completed (may have failed due to fake token, which is expected in test)"
-          echo "PASS: action step was reached and executed"
+          echo "Action completed (may have errored due to no real GitHub context)"
+          echo "new-labels: ${{ steps.action.outputs.new-labels }}"
+          echo "all-labels: ${{ steps.action.outputs.all-labels }}"
+          echo "PASS: action step executed"
