@@ -15,26 +15,24 @@ jobs:
       - name: Create labeler configuration
         run: |
           mkdir -p .github
-          cat > .github/labeler.yml << 'EOF'
+          cat > .github/labeler.yml <<'EOF'
           documentation:
             - changed-files:
               - any-glob-to-any-file: ['docs/**', '*.md']
-          source:
-            - changed-files:
-              - any-glob-to-any-file: ['src/**']
           EOF
 
       - id: action
         uses: .
-        continue-on-error: true
         with:
           repo-token: ${{ github.token }}
           configuration-path: .github/labeler.yml
           sync-labels: false
           dot: true
+        continue-on-error: true
 
       - name: Assert action ran
         run: |
           echo "Action completed (may fail due to no real PR context in act)"
-          echo "outcome: ${{ steps.action.outcome }}"
+          echo "new-labels: ${{ steps.action.outputs.new-labels }}"
+          echo "all-labels: ${{ steps.action.outputs.all-labels }}"
           echo "PASS: action step executed"
