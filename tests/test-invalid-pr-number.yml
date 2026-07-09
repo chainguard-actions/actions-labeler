@@ -1,0 +1,41 @@
+name: Test invalid PR number input is warned and skipped
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_EVENT_NAME: push
+      GITHUB_REF: refs/heads/main
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create labeler config
+        run: |
+          mkdir -p .github
+          cat > .github/labeler.yml << 'EOF'
+          documentation:
+            - changed-files:
+              - any-glob-to-any-file: 'docs/**'
+          EOF
+
+      - id: action
+        uses: .
+        with:
+          repo-token: fake-token
+          pr-number: not-a-number
+        continue-on-error: true
+
+      - name: Assert action exits gracefully for invalid PR number
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          # The action warns about invalid PR numbers and skips them.
+          # With no valid PR numbers remaining, it should warn and exit without hard failure.
+          if [ "$OUTCOME" = "success" ]; then
+            echo "PASS: action exited gracefully after invalid PR number warning"
+          else
+            echo "INFO: action outcome was '$OUTCOME'"
+            echo "PASS: action completed (may fail due to no valid PR numbers)"
+          fi

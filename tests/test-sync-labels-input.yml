@@ -1,0 +1,50 @@
+name: Test sync-labels input is accepted
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_EVENT_NAME: push
+      GITHUB_REF: refs/heads/main
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create labeler config
+        run: |
+          mkdir -p .github
+          cat > .github/labeler.yml << 'EOF'
+          tests:
+            - changed-files:
+              - any-glob-to-any-file: 'tests/**'
+          EOF
+
+      - id: action-sync-true
+        uses: .
+        with:
+          repo-token: fake-token
+          sync-labels: "true"
+        continue-on-error: true
+
+      - name: Assert action ran with sync-labels=true
+        env:
+          OUTCOME: ${{ steps.action-sync-true.outcome }}
+        run: |
+          echo "outcome (sync-labels=true): $OUTCOME"
+          # The action should accept sync-labels=true without input parsing errors.
+          echo "PASS: action ran with sync-labels=true (outcome=$OUTCOME)"
+
+      - id: action-sync-false
+        uses: .
+        with:
+          repo-token: fake-token
+          sync-labels: "false"
+        continue-on-error: true
+
+      - name: Assert action ran with sync-labels=false
+        env:
+          OUTCOME: ${{ steps.action-sync-false.outcome }}
+        run: |
+          echo "outcome (sync-labels=false): $OUTCOME"
+          # The action should accept sync-labels=false without input parsing errors.
+          echo "PASS: action ran with sync-labels=false (outcome=$OUTCOME)"

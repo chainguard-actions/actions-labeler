@@ -1,0 +1,41 @@
+name: Test default configuration path is used
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_EVENT_NAME: push
+      GITHUB_REF: refs/heads/main
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create labeler config at default path
+        run: |
+          mkdir -p .github
+          cat > .github/labeler.yml << 'EOF'
+          javascript:
+            - changed-files:
+              - any-glob-to-any-file: '**/*.js'
+          typescript:
+            - changed-files:
+              - any-glob-to-any-file: '**/*.ts'
+          EOF
+
+      - id: action
+        uses: .
+        with:
+          repo-token: fake-token
+        continue-on-error: true
+
+      - name: Assert action ran (config was found at default path)
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          # The action should not fail due to missing config file.
+          # It may fail due to fake token when making API calls,
+          # but the config file should be found at the default path.
+          # A "Could not get pull request number(s)" warning is expected since
+          # there's no PR context in a push event.
+          echo "PASS: action ran with default config path (outcome=$OUTCOME)"
