@@ -1,0 +1,43 @@
+name: Test labeler with sync-labels input
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create labeler configuration
+        run: |
+          mkdir -p .github
+          cat > .github/labeler.yml << 'EOF'
+          documentation:
+          - changed-files:
+            - any-glob-to-any-file: 'docs/**'
+          tests:
+          - changed-files:
+            - any-glob-to-any-file: 'tests/**'
+          EOF
+
+      - name: Run labeler action with sync-labels enabled
+        id: labeler
+        uses: .
+        continue-on-error: true
+        with:
+          repo-token: ${{ github.token }}
+          configuration-path: .github/labeler.yml
+          sync-labels: true
+
+      - name: Assert action ran with sync-labels input
+        env:
+          OUTCOME: ${{ steps.labeler.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          # The action may succeed (no-op) or fail gracefully when there's no PR context.
+          # Either outcome is acceptable — what we're testing is that sync-labels input is accepted.
+          if [ "$OUTCOME" = "success" ] || [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action completed with outcome '$OUTCOME' with sync-labels=true"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi

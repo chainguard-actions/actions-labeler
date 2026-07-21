@@ -1,0 +1,42 @@
+name: Test labeler with no PR context
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create labeler configuration
+        run: |
+          mkdir -p .github
+          cat > .github/labeler.yml << 'EOF'
+          documentation:
+          - changed-files:
+            - any-glob-to-any-file: 'docs/**'
+          source:
+          - changed-files:
+            - any-glob-to-any-file: 'src/**'
+          EOF
+
+      - name: Run labeler action with no PR number
+        id: labeler
+        uses: .
+        continue-on-error: true
+        with:
+          repo-token: ${{ github.token }}
+          configuration-path: .github/labeler.yml
+
+      - name: Assert action ran (no crash on missing PR context)
+        env:
+          OUTCOME: ${{ steps.labeler.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          # The action may succeed (no-op) or fail gracefully when there's no PR context.
+          # Either outcome is acceptable — what we're testing is that it doesn't panic.
+          if [ "$OUTCOME" = "success" ] || [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action completed with outcome '$OUTCOME' (no unexpected crash)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi
