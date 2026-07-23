@@ -1,12 +1,10 @@
-name: Test invalid PR number input is warned and skipped
+name: Test labeler - invalid PR number provided
 on:
   workflow_dispatch:
+
 jobs:
   test:
     runs-on: ubuntu-latest
-    env:
-      GITHUB_EVENT_NAME: push
-      GITHUB_REF: refs/heads/main
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
@@ -19,23 +17,39 @@ jobs:
               - any-glob-to-any-file: 'docs/**'
           EOF
 
-      - id: action
+      # When an invalid pr-number is provided (non-numeric string),
+      # the action should warn about the invalid number and exit gracefully
+      # without setting any outputs and without failing the step
+      - id: labeler
         uses: .
         with:
-          repo-token: fake-token
+          repo-token: ${{ github.token }}
+          configuration-path: .github/labeler.yml
           pr-number: not-a-number
-        continue-on-error: true
 
-      - name: Assert action exits gracefully for invalid PR number
-        env:
-          OUTCOME: ${{ steps.action.outcome }}
+      - name: Assert action completed without failure
         run: |
-          echo "outcome: $OUTCOME"
-          # The action warns about invalid PR numbers and skips them.
-          # With no valid PR numbers remaining, it should warn and exit without hard failure.
-          if [ "$OUTCOME" = "success" ]; then
-            echo "PASS: action exited gracefully after invalid PR number warning"
-          else
-            echo "INFO: action outcome was '$OUTCOME'"
-            echo "PASS: action completed (may fail due to no valid PR numbers)"
+          echo "Action completed successfully (invalid PR number = graceful exit with warning)"
+          echo "PASS"
+
+      - name: Assert new-labels output is empty
+        env:
+          NEW_LABELS: ${{ steps.labeler.outputs.new-labels }}
+        run: |
+          echo "new-labels: '$NEW_LABELS'"
+          if [ -n "$NEW_LABELS" ]; then
+            echo "FAIL: expected new-labels to be empty when invalid PR number provided, got: '$NEW_LABELS'"
+            exit 1
           fi
+          echo "PASS: new-labels is empty as expected"
+
+      - name: Assert all-labels output is empty
+        env:
+          ALL_LABELS: ${{ steps.labeler.outputs.all-labels }}
+        run: |
+          echo "all-labels: '$ALL_LABELS'"
+          if [ -n "$ALL_LABELS" ]; then
+            echo "FAIL: expected all-labels to be empty when invalid PR number provided, got: '$ALL_LABELS'"
+            exit 1
+          fi
+          echo "PASS: all-labels is empty as expected"

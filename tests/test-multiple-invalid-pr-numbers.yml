@@ -1,4 +1,4 @@
-name: Test labeler - no PR number provided
+name: Test labeler - multiple invalid PR numbers provided
 on:
   workflow_dispatch:
 
@@ -8,8 +8,6 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      # Create a minimal labeler config so the action doesn't fail on config fetch
-      # (action exits before fetching config when no PR number is found)
       - name: Create labeler config
         run: |
           mkdir -p .github
@@ -17,21 +15,27 @@ jobs:
           documentation:
             - changed-files:
               - any-glob-to-any-file: 'docs/**'
+          source:
+            - changed-files:
+              - any-glob-to-any-file: 'src/**'
           EOF
 
-      # When no pr-number is provided and there's no pull_request event context,
-      # the action should warn "Could not get pull request number(s), exiting"
-      # and exit without failure (no outputs set)
+      # When multiple invalid pr-numbers are provided (negative, zero, non-numeric),
+      # the action should warn about each invalid number and exit gracefully
+      # without setting any outputs and without failing the step
       - id: labeler
         uses: .
         with:
           repo-token: ${{ github.token }}
           configuration-path: .github/labeler.yml
-        # No pr-number input — action should warn and exit gracefully
+          pr-number: |
+            -1
+            0
+            abc
 
       - name: Assert action completed without failure
         run: |
-          echo "Action completed successfully (no PR number = graceful exit)"
+          echo "Action completed successfully (all invalid PR numbers = graceful exit with warnings)"
           echo "PASS"
 
       - name: Assert new-labels output is empty
@@ -40,7 +44,7 @@ jobs:
         run: |
           echo "new-labels: '$NEW_LABELS'"
           if [ -n "$NEW_LABELS" ]; then
-            echo "FAIL: expected new-labels to be empty when no PR number provided, got: '$NEW_LABELS'"
+            echo "FAIL: expected new-labels to be empty when all PR numbers are invalid, got: '$NEW_LABELS'"
             exit 1
           fi
           echo "PASS: new-labels is empty as expected"
@@ -51,7 +55,7 @@ jobs:
         run: |
           echo "all-labels: '$ALL_LABELS'"
           if [ -n "$ALL_LABELS" ]; then
-            echo "FAIL: expected all-labels to be empty when no PR number provided, got: '$ALL_LABELS'"
+            echo "FAIL: expected all-labels to be empty when all PR numbers are invalid, got: '$ALL_LABELS'"
             exit 1
           fi
           echo "PASS: all-labels is empty as expected"
