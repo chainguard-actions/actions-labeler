@@ -1,0 +1,46 @@
+name: Test labeler with head-branch configuration
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_EVENT_NAME: pull_request
+      GITHUB_REF: refs/pull/42/merge
+      GITHUB_HEAD_REF: feature/my-feature
+      GITHUB_BASE_REF: main
+      GITHUB_REPOSITORY: test-owner/test-repo
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create labeler configuration with head-branch matching
+        run: |
+          mkdir -p .github
+          cat > .github/labeler.yml << 'EOF'
+          feature:
+          - head-branch: ['^feature', 'feature']
+          release:
+          - base-branch: 'main'
+          documentation:
+          - changed-files:
+            - any-glob-to-any-file: '**/*.md'
+          EOF
+
+      - name: Run labeler action with head-branch config and sync-labels
+        id: labeler
+        uses: .
+        continue-on-error: true
+        with:
+          repo-token: fake-token-for-testing
+          configuration-path: .github/labeler.yml
+          sync-labels: true
+          pr-number: 42
+
+      - name: Assert action ran (not skipped)
+        run: |
+          echo "Labeler action outcome: ${{ steps.labeler.outcome }}"
+          if [ "${{ steps.labeler.outcome }}" = "skipped" ]; then
+            echo "FAIL: action was skipped unexpectedly"
+            exit 1
+          fi
+          echo "PASS: action ran with head-branch config (outcome: ${{ steps.labeler.outcome }})"

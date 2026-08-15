@@ -1,0 +1,36 @@
+name: Test labeler - sync-labels and dot options
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      # Create a labeler config that includes dotfile paths
+      - name: Create labeler config with dotfile patterns
+        run: |
+          mkdir -p .github
+          cat > .github/labeler.yml << 'EOF'
+          github-config:
+            - changed-files:
+              - any-glob-to-any-file: '.github/**'
+          source:
+            - changed-files:
+              - any-glob-to-any-file: 'src/**'
+          EOF
+
+      # Test with sync-labels=true and dot=false (non-default values).
+      # No PR number under workflow_dispatch → graceful exit with warning.
+      - id: labeler
+        uses: .
+        with:
+          repo-token: ${{ github.token }}
+          configuration-path: .github/labeler.yml
+          sync-labels: 'true'
+          dot: 'false'
+
+      - name: Assert action completed without failure
+        run: |
+          echo "Action completed with sync-labels=true and dot=false - PASS"
+          echo "PASS: action accepted sync-labels and dot inputs and exited gracefully"

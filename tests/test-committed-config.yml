@@ -1,0 +1,21 @@
+name: Test labeler - committed fixture config
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      # Use a committed fixture config file (already in the repo under tests/fixtures/).
+      # No PR number under workflow_dispatch → action warns and exits gracefully.
+      - id: labeler
+        uses: .
+        with:
+          repo-token: ${{ github.token }}
+          configuration-path: tests/fixtures/labeler-config.yml
+
+      - name: Assert action completed without failure
+        run: |
+          echo "Action completed with committed fixture config - PASS"
+          echo "PASS: action read committed fixture config and exited gracefully"

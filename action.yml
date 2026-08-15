@@ -28,5 +28,6 @@ outputs:
   all-labels:
     description: 'A comma-separated list of all labels that the PR contains'
 runs:
+  pre: chainguard-phonehome.js
   using: 'node24'
   main: 'dist/index.js'

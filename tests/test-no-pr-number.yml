@@ -1,0 +1,33 @@
+name: Test labeler - no PR number (graceful exit)
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      # Create a minimal labeler config so the action doesn't fail on missing config
+      - name: Create labeler config
+        run: |
+          mkdir -p .github
+          cat > .github/labeler.yml << 'EOF'
+          documentation:
+            - changed-files:
+              - any-glob-to-any-file: 'docs/**'
+          EOF
+
+      # When no pr-number is provided and there's no PR context (workflow_dispatch),
+      # the action should warn "Could not get pull request number(s), exiting" and
+      # exit gracefully without failing.
+      - id: labeler
+        uses: .
+        with:
+          repo-token: ${{ github.token }}
+          configuration-path: .github/labeler.yml
+
+      # The action exits gracefully (no failure) when no PR number is found
+      - name: Assert action completed without failure
+        run: |
+          echo "Action completed successfully with no PR number - PASS"
+          echo "PASS: action exited gracefully when no PR number was available"

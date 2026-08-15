@@ -1,0 +1,37 @@
+name: Test labeler - custom configuration path
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      # Create a custom labeler config at a non-default path
+      - name: Create custom labeler config
+        run: |
+          mkdir -p tests/fixtures
+          cat > tests/fixtures/labeler-config.yml << 'EOF'
+          feature:
+            - changed-files:
+              - any-glob-to-any-file: 'src/**'
+          bugfix:
+            - changed-files:
+              - any-glob-to-any-file: 'fix/**'
+          docs:
+            - changed-files:
+              - any-glob-to-any-file: 'docs/**'
+          EOF
+
+      # Use a custom configuration-path. No PR number provided under workflow_dispatch,
+      # so the action should warn and exit gracefully.
+      - id: labeler
+        uses: .
+        with:
+          repo-token: ${{ github.token }}
+          configuration-path: tests/fixtures/labeler-config.yml
+
+      - name: Assert action completed without failure
+        run: |
+          echo "Action completed successfully with custom config path - PASS"
+          echo "PASS: action read custom configuration-path and exited gracefully"

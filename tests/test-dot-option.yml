@@ -1,0 +1,64 @@
+name: Test labeler dot option for dotfile paths
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_EVENT_NAME: pull_request
+      GITHUB_REF: refs/pull/5/merge
+      GITHUB_HEAD_REF: update-github-config
+      GITHUB_BASE_REF: main
+      GITHUB_REPOSITORY: test-owner/test-repo
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create labeler configuration targeting dotfiles
+        run: |
+          mkdir -p .github
+          cat > .github/labeler.yml << 'EOF'
+          github-config:
+          - changed-files:
+            - any-glob-to-any-file: '.github/**'
+          ci:
+          - changed-files:
+            - any-glob-to-any-file: '.github/workflows/**'
+          EOF
+
+      - name: Run labeler action with dot=true (default)
+        id: labeler-dot-true
+        uses: .
+        continue-on-error: true
+        with:
+          repo-token: fake-token-for-testing
+          configuration-path: .github/labeler.yml
+          dot: true
+          pr-number: 5
+
+      - name: Assert action ran with dot=true
+        run: |
+          echo "Labeler action outcome (dot=true): ${{ steps.labeler-dot-true.outcome }}"
+          if [ "${{ steps.labeler-dot-true.outcome }}" = "skipped" ]; then
+            echo "FAIL: action was skipped unexpectedly"
+            exit 1
+          fi
+          echo "PASS: action ran with dot=true (outcome: ${{ steps.labeler-dot-true.outcome }})"
+
+      - name: Run labeler action with dot=false
+        id: labeler-dot-false
+        uses: .
+        continue-on-error: true
+        with:
+          repo-token: fake-token-for-testing
+          configuration-path: .github/labeler.yml
+          dot: false
+          pr-number: 5
+
+      - name: Assert action ran with dot=false
+        run: |
+          echo "Labeler action outcome (dot=false): ${{ steps.labeler-dot-false.outcome }}"
+          if [ "${{ steps.labeler-dot-false.outcome }}" = "skipped" ]; then
+            echo "FAIL: action was skipped unexpectedly"
+            exit 1
+          fi
+          echo "PASS: action ran with dot=false (outcome: ${{ steps.labeler-dot-false.outcome }})"

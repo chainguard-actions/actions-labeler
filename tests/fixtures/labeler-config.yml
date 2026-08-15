@@ -1,0 +1,9 @@
+documentation:
+  - changed-files:
+    - any-glob-to-any-file: 'docs/**'
+feature:
+  - changed-files:
+    - any-glob-to-any-file: 'src/**'
+bugfix:
+  - changed-files:
+    - any-glob-to-any-file: 'fix/**'
