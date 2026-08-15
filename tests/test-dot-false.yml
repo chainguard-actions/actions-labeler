@@ -1,4 +1,4 @@
-name: Test labeler with explicit pr-number
+name: Test labeler with dot=false
 on:
   workflow_dispatch:
 jobs:
@@ -6,8 +6,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GITHUB_EVENT_NAME: pull_request
-      GITHUB_REF: refs/pull/42/merge
-      GITHUB_HEAD_REF: feature-branch
+      GITHUB_REF: refs/pull/5/merge
+      GITHUB_HEAD_REF: chore/update-ci
       GITHUB_BASE_REF: main
     steps:
       - name: Checkout repository
@@ -17,25 +17,25 @@ jobs:
         run: |
           mkdir -p .github
           cat > .github/labeler.yml << 'EOF'
-          bug:
+          ci:
             - changed-files:
-              - any-glob-to-any-file: ['src/**/*.js']
-          tests:
+              - any-glob-to-any-file: ['.github/workflows/**']
+          docs:
             - changed-files:
-              - any-glob-to-any-file: ['test/**', '**/*.test.js']
+              - any-glob-to-any-file: ['docs/**', 'README.md']
           EOF
 
       - id: labeler
-        name: Run labeler with explicit pr-number
+        name: Run labeler with dot=false
         uses: .
         with:
           repo-token: fake-token-for-testing
           configuration-path: .github/labeler.yml
-          pr-number: 42
           sync-labels: false
+          dot: false
         continue-on-error: true
 
-      - name: Assert action ran with explicit pr-number
+      - name: Assert action ran with dot=false
         env:
           OUTCOME: ${{ steps.labeler.outcome }}
         run: |
@@ -44,4 +44,4 @@ jobs:
             echo "FAIL: action was skipped or cancelled unexpectedly"
             exit 1
           fi
-          echo "PASS: action ran with explicit pr-number, outcome '$OUTCOME'"
+          echo "PASS: action ran with dot=false, outcome '$OUTCOME'"

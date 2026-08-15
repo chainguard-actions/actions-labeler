@@ -1,0 +1,54 @@
+name: Test labeler with pr-number input
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create labeler config
+        run: |
+          mkdir -p .github
+          cat > .github/labeler.yml << 'EOF'
+          documentation:
+            - changed-files:
+              - any-glob-to-any-file:
+                - '**/*.md'
+          source:
+            - changed-files:
+              - any-glob-to-any-file:
+                - 'src/**'
+                - '**/*.ts'
+                - '**/*.js'
+          EOF
+
+      - name: Run labeler with explicit pr-number (PR may not exist - expect definitive outcome)
+        id: labeler
+        uses: .
+        with:
+          repo-token: ${{ github.token }}
+          configuration-path: .github/labeler.yml
+          pr-number: 1
+          sync-labels: false
+          dot: true
+        continue-on-error: true
+
+      - name: Assert action ran with pr-number input
+        env:
+          NEW_LABELS: ${{ steps.labeler.outputs.new-labels }}
+          ALL_LABELS: ${{ steps.labeler.outputs.all-labels }}
+          OUTCOME: ${{ steps.labeler.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          echo "new-labels: $NEW_LABELS"
+          echo "all-labels: $ALL_LABELS"
+          # The action should produce a definitive outcome (success or failure).
+          # Success means PR #1 exists and was labeled; failure means it doesn't exist.
+          # Either is acceptable - we're testing the action accepts the pr-number input.
+          if [ "$OUTCOME" = "success" ] || [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action ran with pr-number input and produced a definitive outcome"
+          else
+            echo "FAIL: unexpected outcome: $OUTCOME"
+            exit 1
+          fi

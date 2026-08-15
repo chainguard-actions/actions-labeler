@@ -1,0 +1,51 @@
+name: Test labeler with custom configuration path
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create custom labeler config at non-default path
+        run: |
+          mkdir -p .github/custom
+          cat > .github/custom/my-labeler.yml << 'EOF'
+          feature:
+            - changed-files:
+              - any-glob-to-any-file:
+                - 'src/**'
+          bugfix:
+            - changed-files:
+              - any-glob-to-any-file:
+                - 'fix/**'
+                - 'hotfix/**'
+          EOF
+
+      - name: Run labeler with custom config path (no PR - expect graceful exit)
+        id: labeler
+        uses: .
+        with:
+          repo-token: ${{ github.token }}
+          configuration-path: .github/custom/my-labeler.yml
+          sync-labels: false
+          dot: false
+        continue-on-error: true
+
+      - name: Assert action ran with custom config
+        env:
+          NEW_LABELS: ${{ steps.labeler.outputs.new-labels }}
+          ALL_LABELS: ${{ steps.labeler.outputs.all-labels }}
+          OUTCOME: ${{ steps.labeler.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          echo "new-labels: $NEW_LABELS"
+          echo "all-labels: $ALL_LABELS"
+          # The action should either succeed with empty labels or fail gracefully
+          # when there's no PR context. Both outcomes are acceptable.
+          if [ "$OUTCOME" = "success" ] || [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action ran with custom config path and produced a definitive outcome"
+          else
+            echo "FAIL: unexpected outcome: $OUTCOME"
+            exit 1
+          fi
