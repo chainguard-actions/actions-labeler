@@ -4,8 +4,13 @@
   "version": "v7.0.0",
   "commit_sha": "bf12e9b00b37c5c0ca2b87b79b2daf7891dbda13",
   "url": "https://github.com/actions/labeler",
-  "policy_sha": "d636be7e43ef829af6e853da6b3c7566db9f72fe",
+  "policy_sha": "374911c4be584df24e6da57af2d990570ef0f859",
   "test_policy_sha": "843adf9e4b8f85d0c08b27b9d0b09dd094b54702",
   "test_agent_version": "2",
-  "harden_agent_version": "2"
+  "harden_agent_version": "2",
+  "dist_artifact": {
+    "gcs_uri": "gs://patch-actions-node-artifacts/dist-artifacts/actions/labeler/v7.0.0/sha256-039bb705f1aac0b046dd4589702d5c8404fbb4b02eb70232fd3159c553836cb4.tar.gz",
+    "sha256": "039bb705f1aac0b046dd4589702d5c8404fbb4b02eb70232fd3159c553836cb4",
+    "size_bytes": 376359
+  }
 }
